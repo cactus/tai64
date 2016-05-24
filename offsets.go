@@ -9,7 +9,7 @@ package tai64n
 // http://maia.usno.navy.mil/ser7/tai-utc.dat
 // http://www.stjarnhimlen.se/comp/time.html
 var tia64nDifferences = []struct {
-	utime  int64
+	utime int64
 	offset int64
 }{
 	{63072000, 10},

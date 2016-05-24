@@ -30,7 +30,7 @@ var tia64nDifferences = []struct {
 	offset int64
 }{
 	{{- range .Entries}}
-	{ {{.Ts}}, {{.Drift}} },
+	{{"{"}}{{.Ts}}, {{.Drift}}{{"}"}},
 	{{- end}}
 }
 
