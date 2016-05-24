@@ -14,7 +14,9 @@ import (
 
 const tai64Epoch = 2 << 61
 
-func getOffset(utime int64) int64 {
+// GetOffset retuns the TAI64N offset for a UTC unix timestamp
+// returns int64 offset
+func GetOffsetUnix(utime int64) int64 {
 	// default offset is 10
 	offset := int64(10)
 	for i := tia64nSize - 1; i >= 0; i-- {
@@ -28,7 +30,13 @@ func getOffset(utime int64) int64 {
 	return offset
 }
 
-func getInvOffset(utime int64) int64 {
+// GetOffset retuns the TAI64N offset for a time.Time in UTC
+// returns int64 offset
+func GetOffsetTime(t time.Time) int64 {
+	return GetOffsetUnix(t.UTC().Unix())
+}
+
+func getInvOffsetUnix(utime int64) int64 {
 	// default offset is 10
 	offset := int64(10)
 	for i := tia64nSize - 1; i >= 0; i-- {
@@ -52,7 +60,7 @@ func Format(t time.Time) string {
 	if u < 0 {
 		return fmt.Sprintf("@%016x%08x", (2<<61)+u+10, t.Nanosecond())
 	}
-	return fmt.Sprintf("@4%015x%08x", u+getOffset(u), t.Nanosecond())
+	return fmt.Sprintf("@4%015x%08x", u+GetOffsetUnix(u), t.Nanosecond())
 }
 
 // Parse parses a TAI64N timestamp
@@ -85,7 +93,7 @@ func Parse(s string) (time.Time, error) {
 	if seconds >= tai64Epoch {
 		// fiddle with add/remove time
 		unix := seconds - tai64Epoch
-		offset := getInvOffset(unix)
+		offset := getInvOffsetUnix(unix)
 		unix = unix - offset
 		t := time.Unix(unix, nanoseconds).UTC()
 		return t, nil
