@@ -39,6 +39,8 @@ func getInvOffset(utime int64) int64 {
 	return offset
 }
 
+// Format formats a time.Time as a TAI64N timestamp
+// returns a string TAI64N timestamps
 func Format(t time.Time) string {
 	t = t.UTC()
 	u := t.Unix()
@@ -50,6 +52,8 @@ func Format(t time.Time) string {
 	}
 }
 
+// Parse parses a TAI64N timestamp
+// returns a time.Time and an error.
 func Parse(s string) (time.Time, error) {
 	var seconds, nanoseconds int64
 	if s[0] == '@' {
