@@ -23,16 +23,14 @@ const tplText = `
 
 package {{.Pkg}}
 
-import "time"
-
 // http://maia.usno.navy.mil/ser7/tai-utc.dat
 // http://www.stjarnhimlen.se/comp/time.html
 var tia64nDifferences = []struct {
-	t      time.Time
+	utime int64
 	offset int64
 }{
 	{{- range .Entries}}
-	{time.Date({{.Ts.Format "2006, 2, 1" }}, 0, 0, 0, 0, time.UTC), {{.Drift}}},
+	{ {{.Ts}}, {{.Drift}} },
 	{{- end}}
 }
 
@@ -45,7 +43,7 @@ type SrcFile struct {
 }
 
 type Entry struct {
-	Ts    time.Time
+	Ts    int64
 	Drift int64
 }
 
@@ -66,7 +64,8 @@ func main() {
 
 	var br *bufio.Reader
 	if input == "" {
-		resp, err := http.Get("http://maia.usno.navy.mil/ser7/tai-utc.dat")
+		input = "http://maia.usno.navy.mil/ser7/tai-utc.dat"
+		resp, err := http.Get(input)
 		if err != nil {
 			os.Exit(1)
 		}
@@ -118,7 +117,7 @@ func main() {
 			continue
 		}
 		// just truncate the float to int
-		e := Entry{t, int64(s)}
+		e := Entry{t.Unix(), int64(s)}
 		entries = append(entries, e)
 	}
 

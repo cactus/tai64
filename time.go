@@ -1,5 +1,7 @@
 package tai64n
 
+//go:generate go run ./tools/generate.go -pkg $GOPACKAGE -output offsets.go
+
 import (
 	"fmt"
 	"strconv"
@@ -8,10 +10,11 @@ import (
 
 const tai64Epoch = 2 << 61
 
-func getOffset(t time.Time) int64 {
-	var offset int64
+func getOffset(utime int64) int64 {
+	// default offset is 10
+	offset := int64(10)
 	for i := tia64nSize - 1; i >= 0; i-- {
-		if t.Before(tia64nDifferences[i].t) {
+		if utime < tia64nDifferences[i].utime {
 			continue
 		} else {
 			offset = tia64nDifferences[i].offset
@@ -21,14 +24,15 @@ func getOffset(t time.Time) int64 {
 	return offset
 }
 
-func getInvOffset(t time.Time) int64 {
+func getInvOffset(utime int64) int64 {
+	// default offset is 10
 	offset := int64(10)
 	for i := tia64nSize - 1; i >= 0; i-- {
-		o := tia64nDifferences[i].offset
-		if t.Before(tia64nDifferences[i].t.Add(time.Duration(o) * time.Second)) {
+		t := tia64nDifferences[i]
+		if utime < (t.utime + t.offset) {
 			continue
 		} else {
-			offset = o
+			offset = t.offset
 			break
 		}
 	}
@@ -36,16 +40,13 @@ func getInvOffset(t time.Time) int64 {
 }
 
 func Format(t time.Time) string {
-	u := t.UTC()
-	unix := u.Unix()
+	t = t.UTC()
+	u := t.Unix()
 
-	if t.Before(time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)) {
-		return fmt.Sprintf("@%016x%08x", (2<<61)+unix+10, u.Nanosecond())
-	} else if t.Before(tia64nDifferences[0].t) {
-		return fmt.Sprintf("@4%015x%08x", unix+10, u.Nanosecond())
+	if u < 0 {
+		return fmt.Sprintf("@%016x%08x", (2<<61)+u+10, t.Nanosecond())
 	} else {
-		offset := getOffset(u)
-		return fmt.Sprintf("@4%015x%08x", unix+offset, u.Nanosecond())
+		return fmt.Sprintf("@4%015x%08x", u+getOffset(u), t.Nanosecond())
 	}
 }
 
@@ -75,13 +76,15 @@ func Parse(s string) (time.Time, error) {
 	}
 
 	if seconds >= tai64Epoch {
-		t := time.Unix(seconds-tai64Epoch, nanoseconds).UTC()
 		// fiddle with add/remove time
-		offset := getInvOffset(t)
-		t = t.Add(time.Duration(-offset) * time.Second)
+		unix := seconds - tai64Epoch
+		offset := getInvOffset(unix)
+		unix = unix - offset
+		t := time.Unix(unix, nanoseconds).UTC()
 		return t, nil
 	} else {
-		t := time.Unix(-(tai64Epoch - seconds + 10), nanoseconds).UTC()
+		unix := -(tai64Epoch - seconds + 10)
+		t := time.Unix(unix, nanoseconds).UTC()
 		return t, nil
 	}
 }
