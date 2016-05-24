@@ -47,9 +47,8 @@ func Format(t time.Time) string {
 
 	if u < 0 {
 		return fmt.Sprintf("@%016x%08x", (2<<61)+u+10, t.Nanosecond())
-	} else {
-		return fmt.Sprintf("@4%015x%08x", u+getOffset(u), t.Nanosecond())
 	}
+	return fmt.Sprintf("@4%015x%08x", u+getOffset(u), t.Nanosecond())
 }
 
 // Parse parses a TAI64N timestamp
@@ -86,9 +85,9 @@ func Parse(s string) (time.Time, error) {
 		unix = unix - offset
 		t := time.Unix(unix, nanoseconds).UTC()
 		return t, nil
-	} else {
-		unix := -(tai64Epoch - seconds + 10)
-		t := time.Unix(unix, nanoseconds).UTC()
-		return t, nil
 	}
+
+	unix := -(tai64Epoch - seconds + 10)
+	t := time.Unix(unix, nanoseconds).UTC()
+	return t, nil
 }

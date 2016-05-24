@@ -37,12 +37,12 @@ var tia64nDifferences = []struct {
 var tia64nSize = len(tia64nDifferences)
 `
 
-type SrcFile struct {
+type srcFile struct {
 	Pkg     string
-	Entries []Entry
+	Entries []entry
 }
 
-type Entry struct {
+type entry struct {
 	Ts    int64
 	Drift int64
 }
@@ -87,7 +87,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	entries := make([]Entry, 0)
+	entries := make([]entry, 0)
 
 	for {
 		line, err := br.ReadString('\n')
@@ -117,7 +117,7 @@ func main() {
 			continue
 		}
 		// just truncate the float to int
-		e := Entry{t.Unix(), int64(s)}
+		e := entry{t.Unix(), int64(s)}
 		entries = append(entries, e)
 	}
 
@@ -130,7 +130,7 @@ func main() {
 	writer := bufio.NewWriter(w)
 	defer writer.Flush()
 
-	srcfile := &SrcFile{pkg, entries}
+	srcfile := &srcFile{pkg, entries}
 	err = t.Execute(writer, srcfile)
 	if err != nil {
 		log.Fatal(err)
