@@ -34,7 +34,7 @@ var tia64nDifferences = []struct {
 	offset int64
 }{
 	{{- range .Entries}}
-	{{"{"}}{{.Ts}}, {{.Drift}}{{"}"}},
+	{{"{"}}{{.Ts}}, {{.Drift}}{{"}"}}, // {{.TsD}}
 	{{- end}}
 }
 
@@ -48,6 +48,7 @@ type srcFile struct {
 
 type entry struct {
 	Ts    int64
+	TsD   string
 	Drift int64
 }
 
@@ -121,7 +122,7 @@ func main() {
 			continue
 		}
 		// just truncate the float to int
-		e := entry{t.Unix(), int64(s)}
+		e := entry{t.Unix(), t.Format(time.RFC3339), int64(s)}
 		entries = append(entries, e)
 	}
 

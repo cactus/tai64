@@ -26,6 +26,7 @@ var tests = map[string]struct {
 	"at tai-utc epoch":     {"1970-01-01T00:00:10Z", "@400000000000001400000000"},
 	"after tai-utc epoch":  {"1970-01-01T00:00:11Z", "@400000000000001500000000"},
 	"a more current date":  {"2016-12-31T23:59:59Z", "@40000000586846a300000000"},
+	"nanoseconds":          {"2015-06-30T23:59:59.908626131Z", "@4000000055932da2362888d3"},
 }
 
 func TestRoundTrip(t *testing.T) {
