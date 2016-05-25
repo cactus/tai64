@@ -14,7 +14,7 @@ import (
 
 const tai64Epoch = 2 << 61
 
-// GetOffset retuns the TAI64N offset for a UTC unix timestamp
+// GetOffset retuns the TAI64 offset for a UTC unix timestamp
 // returns int64 offset
 func GetOffsetUnix(utime int64) int64 {
 	// default offset is 10
@@ -30,7 +30,7 @@ func GetOffsetUnix(utime int64) int64 {
 	return offset
 }
 
-// GetOffset retuns the TAI64N offset for a time.Time in UTC
+// GetOffset retuns the TAI64 offset for a time.Time in UTC
 // returns int64 offset
 func GetOffsetTime(t time.Time) int64 {
 	return GetOffsetUnix(t.UTC().Unix())
@@ -51,9 +51,9 @@ func getInvOffsetUnix(utime int64) int64 {
 	return offset
 }
 
-// Format formats a time.Time as a TAI64N timestamp
+// FormatNano formats a time.Time as a TAI64N timestamp
 // returns a string TAI64N timestamps
-func Format(t time.Time) string {
+func FormatNano(t time.Time) string {
 	t = t.UTC()
 	u := t.Unix()
 
@@ -63,7 +63,18 @@ func Format(t time.Time) string {
 	return fmt.Sprintf("@4%015x%08x", u+GetOffsetUnix(u), t.Nanosecond())
 }
 
-// Parse parses a TAI64N timestamp
+// Format formats a time.Time as a TAI64 timestamp
+// returns a string TAI64 timestamps
+func Format(t time.Time) string {
+	u := t.UTC().Unix()
+
+	if u < 0 {
+		return fmt.Sprintf("@%016x", (2<<61)+u+10)
+	}
+	return fmt.Sprintf("@4%015x", u+GetOffsetUnix(u))
+}
+
+// Parse parses a TAI64 or TAI64N timestamp
 // returns a time.Time and an error.
 func Parse(s string) (time.Time, error) {
 	var seconds, nanoseconds int64
@@ -82,8 +93,12 @@ func Parse(s string) (time.Time, error) {
 	seconds = i
 	s = s[16:]
 
-	if len(s) == 8 {
-		i, err := strconv.ParseInt(s[0:8], 16, 64)
+	// Check for TAI64N or TAI64NA format
+	slen := len(s)
+	if slen == 8 || slen == 16 {
+		// time.Time is not attoseconds granular, so
+		// just pull off the TAI64N section.
+		i, err := strconv.ParseInt(s[:8], 16, 64)
 		if err != nil {
 			return time.Time{}, err
 		}

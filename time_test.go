@@ -29,14 +29,25 @@ var tests = map[string]struct {
 	"nanoseconds":          {"2015-06-30T23:59:59.908626131Z", "@4000000055932da2362888d3"},
 }
 
+func TestRoundTripNano(t *testing.T) {
+	for name, tt := range tests {
+		tm, err := time.Parse(time.RFC3339Nano, tt.t)
+		assert.Nil(t, err, "%s: test failed parsing time.Time", name)
+		o := FormatNano(tm)
+		p, err := Parse(o)
+		assert.Nil(t, err, "%s: test failed parsing", name)
+		assert.Equal(t, tm, p, "%s: test failed date compare: %s", name)
+	}
+}
+
 func TestRoundTrip(t *testing.T) {
 	for name, tt := range tests {
 		tm, err := time.Parse(time.RFC3339Nano, tt.t)
 		assert.Nil(t, err, "%s: test failed parsing time.Time", name)
 		o := Format(tm)
-		p, err := Parse(o)
+		p, err := Parse(o[:17])
 		assert.Nil(t, err, "%s: test failed parsing", name)
-		assert.Equal(t, tm, p, "%s: test failed date compare: %s", name)
+		assert.Equal(t, tm.Truncate(time.Second), p, "%s: test failed date compare: %s", name)
 	}
 }
 
@@ -44,7 +55,7 @@ func TestFormat(t *testing.T) {
 	for name, tt := range tests {
 		tm, err := time.Parse(time.RFC3339Nano, tt.t)
 		assert.Nil(t, err, "%s: test failed parsing time.Time", name)
-		o := Format(tm)
+		o := FormatNano(tm)
 		assert.Equal(t, tt.o, o, "%s: test failed date compare", name)
 	}
 }
