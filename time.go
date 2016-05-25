@@ -14,7 +14,7 @@ import (
 
 const tai64Epoch = 2 << 61
 
-// GetOffset returns the TAI64 offset for a UTC unix timestamp
+// GetOffsetUnix returns the TAI64 offset for a UTC unix timestamp
 // returns int64 offset
 func GetOffsetUnix(utime int64) int64 {
 	// default offset is 10
@@ -30,7 +30,7 @@ func GetOffsetUnix(utime int64) int64 {
 	return offset
 }
 
-// GetOffset returns the TAI64 offset for a time.Time in UTC
+// GetOffsetTime returns the TAI64 offset for a time.Time in UTC
 // returns int64 offset
 func GetOffsetTime(t time.Time) int64 {
 	return GetOffsetUnix(t.UTC().Unix())
