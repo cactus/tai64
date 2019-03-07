@@ -30,11 +30,15 @@ package {{.Pkg}}
 // http://maia.usno.navy.mil/ser7/tai-utc.dat
 // http://www.stjarnhimlen.se/comp/time.html
 var tia64nDifferences = []struct {
-	utime  int64
+    // TAI time
+    ttime int64
+    // TAI-UTC offset
 	offset int64
+    // unix UTC time
+	utime int64
 }{
 	{{- range .Entries}}
-	{{"{"}}{{.Ts}}, {{.Drift}}{{"}"}}, // {{.TsD}}
+	{{"{"}}0x{{.Tts|printf "%x"}}, {{.Drift}}, {{.Ts}}{{"}"}}, // {{.TsD}}
 	{{- end}}
 }
 
@@ -50,6 +54,7 @@ type entry struct {
 	Ts    int64
 	TsD   string
 	Drift int64
+	Tts   int64
 }
 
 func main() {
@@ -122,7 +127,9 @@ func main() {
 			continue
 		}
 		// just truncate the float to int
-		e := entry{t.Unix(), t.Format(time.RFC3339), int64(s)}
+		unixT := t.Unix()
+		taiT := (2 << 61) + unixT + int64(s)
+		e := entry{unixT, t.Format(time.RFC3339), int64(s), taiT}
 		entries = append(entries, e)
 	}
 

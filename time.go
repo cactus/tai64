@@ -12,13 +12,17 @@ import (
 	"time"
 )
 
-const tai64Epoch = 2 << 61
+// dt at Unix epoch:  1970-01-01 00:00:00
+// Corresponding TAI: 1970-01-01 00:00:10
+// TAI at Unix Epoch
+const epochTai64 = (2 << 61) + 10
 
 // GetOffsetUnix returns the TAI64 offset for a UTC unix timestamp
 // returns int64 offset
 func GetOffsetUnix(utime int64) int64 {
 	// default offset is 10
 	offset := int64(10)
+
 	for i := tia64nSize - 1; i >= 0; i-- {
 		if utime < tia64nDifferences[i].utime {
 			continue
@@ -36,12 +40,15 @@ func GetOffsetTime(t time.Time) int64 {
 	return GetOffsetUnix(t.UTC().Unix())
 }
 
-func getInvOffsetUnix(utime int64) int64 {
+func getInvOffsetTai64(ttime int64) int64 {
 	// default offset is 10
 	offset := int64(10)
+
+	// walk backwards because we are looking for
+	// the "bucket" where we fit
 	for i := tia64nSize - 1; i >= 0; i-- {
 		t := tia64nDifferences[i]
-		if utime < (t.utime + t.offset) {
+		if ttime < (t.ttime) {
 			continue
 		} else {
 			offset = t.offset
@@ -58,7 +65,7 @@ func FormatNano(t time.Time) string {
 	u := t.Unix()
 
 	if u < 0 {
-		return fmt.Sprintf("@%016x%08x", (2<<61)+u+10, t.Nanosecond())
+		return fmt.Sprintf("@%016x%08x", epochTai64+u, t.Nanosecond())
 	}
 	return fmt.Sprintf("@4%015x%08x", u+GetOffsetUnix(u), t.Nanosecond())
 }
@@ -69,7 +76,7 @@ func Format(t time.Time) string {
 	u := t.UTC().Unix()
 
 	if u < 0 {
-		return fmt.Sprintf("@%016x", (2<<61)+u+10)
+		return fmt.Sprintf("@%016x", epochTai64+u)
 	}
 	return fmt.Sprintf("@4%015x", u+GetOffsetUnix(u))
 }
@@ -77,7 +84,7 @@ func Format(t time.Time) string {
 // Parse parses a TAI64 or TAI64N timestamp
 // returns a time.Time and an error.
 func Parse(s string) (time.Time, error) {
-	var seconds, nanoseconds int64
+	var tseconds, nanoseconds int64
 	if s[0] == '@' {
 		s = s[1:]
 	}
@@ -90,7 +97,7 @@ func Parse(s string) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
-	seconds = i
+	tseconds = i
 	s = s[16:]
 
 	// Check for TAI64N or TAI64NA format
@@ -105,16 +112,27 @@ func Parse(s string) (time.Time, error) {
 		nanoseconds = i
 	}
 
-	if seconds >= tai64Epoch {
-		// fiddle with add/remove time
-		unix := seconds - tai64Epoch
-		offset := getInvOffsetUnix(unix)
-		unix = unix - offset
+	// if tia seconds are at least TAI epoch, we are in positive unix seconds
+	if tseconds >= epochTai64 {
+		// To get back to unix seconds, we need to...
+		// 1. Figure out the TAI-UTC offset
+		// 2. Subtract TAI epoch plus any additional offset
+
+		// get inverse offset by Tai lookup
+		offset := getInvOffsetTai64(tseconds)
+		fmt.Printf("offset: %d\n", offset)
+
+		// epochTai64 already has the +10 default offset included, so adjust
+		// for that when subtracting offset.
+		unix := tseconds - epochTai64 - (offset - 10)
+
 		t := time.Unix(unix, nanoseconds).UTC()
 		return t, nil
 	}
 
-	unix := -(tai64Epoch - seconds + 10)
+	// for values below TAI epoch, we can just subtract seconds from TIA epoch,
+	// then change sign.
+	unix := -(epochTai64 - tseconds)
 	t := time.Unix(unix, nanoseconds).UTC()
 	return t, nil
 }
