@@ -62,5 +62,5 @@ equal
 Released under the [MIT license][2]. See `LICENSE.md` file for details.
 
 
-[1]: http://www.tai64.com
+[1]: https://cr.yp.to/libtai/tai64.html
 [2]: http://www.opensource.org/licenses/mit-license.php
