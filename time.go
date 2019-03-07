@@ -120,7 +120,6 @@ func Parse(s string) (time.Time, error) {
 
 		// get inverse offset by Tai lookup
 		offset := getInvOffsetTai64(tseconds)
-		fmt.Printf("offset: %d\n", offset)
 
 		// epochTai64 already has the +10 default offset included, so adjust
 		// for that when subtracting offset.
