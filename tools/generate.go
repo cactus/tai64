@@ -77,7 +77,7 @@ func main() {
 		input = "http://maia.usno.navy.mil/ser7/tai-utc.dat"
 		resp, err := http.Get(input)
 		if err != nil {
-			os.Exit(1)
+			log.Fatalf("Error fetching tai-utc.dat: %s", err)
 		}
 		defer resp.Body.Close()
 		br = bufio.NewReader(resp.Body)
