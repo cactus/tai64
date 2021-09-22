@@ -106,12 +106,12 @@ func main() {
 		}
 
 		line = strings.TrimSpace(line)
-		if line == "" {
+		if line == "" || strings.HasPrefix(line, ";") {
 			continue
 		}
 
 		parts := strings.Fields(line)
-		t, err := time.Parse("2006 Jan 2", strings.Title(strings.Join(parts[0:3], " ")))
+		t, err := time.Parse("2006-1-2", strings.Title(strings.Join(parts[0:3], "-")))
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -121,7 +121,7 @@ func main() {
 			continue
 		}
 
-		s, err := strconv.ParseFloat(parts[6], 32)
+		s, err := strconv.ParseFloat(parts[3], 32)
 		if err != nil {
 			fmt.Println(err)
 			continue
