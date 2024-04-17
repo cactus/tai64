@@ -6,8 +6,10 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
+	"go/format"
 	"html/template"
 	"log"
 	"net/http"
@@ -27,7 +29,7 @@ const tplText = `
 
 package {{.Pkg}}
 
-// http://maia.usno.navy.mil/ser7/tai-utc.dat
+// https://hpiers.obspm.fr/iers/bul/bulc/Leap_Second.dat
 // http://www.stjarnhimlen.se/comp/time.html
 var tia64nDifferences = []struct {
     // TAI time
@@ -57,10 +59,11 @@ type entry struct {
 	Tts   int64
 }
 
+const datURL = "https://hpiers.obspm.fr/iers/bul/bulc/Leap_Second.dat"
+
 func main() {
-	var output, input, pkg string
+	var output, pkg string
 	flag.StringVar(&output, "output", "", "output file")
-	flag.StringVar(&input, "input", "", "input file")
 	flag.StringVar(&pkg, "pkg", "", "package name")
 	flag.Parse()
 
@@ -73,24 +76,14 @@ func main() {
 	}
 
 	var br *bufio.Reader
-	if input == "" {
-		input = "http://maia.usno.navy.mil/ser7/tai-utc.dat"
-		resp, err := http.Get(input)
-		if err != nil {
-			log.Fatalf("Error fetching tai-utc.dat: %s", err)
-		}
-		defer resp.Body.Close()
-		br = bufio.NewReader(resp.Body)
-	} else {
-		f, err := os.Open(input)
-		if err != nil {
-			log.Fatalf("Cant open file: %s", err)
-		}
-		defer f.Close()
-		br = bufio.NewReader(f)
+	resp, err := http.Get(datURL)
+	if err != nil {
+		log.Fatalf("Error fetching '%s': %s", datURL, err)
 	}
+	defer resp.Body.Close()
+	br = bufio.NewReader(resp.Body)
 
-	fmt.Printf("Generating %s based on %s\n", path.Base(output), path.Base(input))
+	fmt.Printf("Generating '%s' based on '%s'\n", path.Base(output), datURL)
 
 	t, err := template.New("fileTemplate").Parse(strings.TrimLeft(tplText, "\n"))
 	if err != nil {
@@ -106,12 +99,13 @@ func main() {
 		}
 
 		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, ";") {
+		if line == "" || strings.HasPrefix(line, ";") || strings.HasPrefix(line, "#") {
 			continue
 		}
 
 		parts := strings.Fields(line)
-		t, err := time.Parse("2006-1-2", strings.Title(strings.Join(parts[0:3], "-")))
+		// parse date of leap second
+		t, err := time.Parse("2-1-2006", strings.Join(parts[1:4], "-"))
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -121,7 +115,8 @@ func main() {
 			continue
 		}
 
-		s, err := strconv.ParseFloat(parts[3], 32)
+		// parse TAI-UTC(s)
+		s, err := strconv.ParseFloat(parts[4], 32)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -133,19 +128,21 @@ func main() {
 		entries = append(entries, e)
 	}
 
-	w, err := os.Create(output)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer w.Close()
-
-	writer := bufio.NewWriter(w)
-	defer writer.Flush()
+	bufr := &bytes.Buffer{}
 
 	srcfile := &srcFile{pkg, entries}
-	err = t.Execute(writer, srcfile)
+	err = t.Execute(bufr, srcfile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	outBytes, err := format.Source(bufr.Bytes())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = os.WriteFile(output, outBytes, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

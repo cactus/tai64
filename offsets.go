@@ -6,7 +6,7 @@
 
 package tai64
 
-// http://maia.usno.navy.mil/ser7/tai-utc.dat
+// https://hpiers.obspm.fr/iers/bul/bulc/Leap_Second.dat
 // http://www.stjarnhimlen.se/comp/time.html
 var tia64nDifferences = []struct {
 	// TAI time
