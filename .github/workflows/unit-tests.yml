@@ -14,16 +14,16 @@ jobs:
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
+    - name: Src Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+
     - name: Setup Go ${{ matrix.goVer }}
-      uses: actions/setup-go@v1
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.goVer }}
       id: go
-
-    - name: Src Checkout
-      uses: actions/checkout@v1
-      with:
-        fetch-depth: 1
 
     - name: Tests
       env:
